@@ -3,7 +3,11 @@
 describe RuboCop::Cop::RSpec::Focus do
   subject(:cop) { described_class.new }
 
-  [:describe, :context, :it, :feature, :scenario].each do |block_type|
+  [
+    :example_group, :describe, :context, :xdescribe, :xcontext,
+    :it, :example, :specify, :xit, :xexample, :xspecify,
+    :feature, :scenario, :xfeature, :xscenario
+  ].each do |block_type|
     it "finds focused `#{block_type}` blocks" do
       inspect_source(cop, ["#{block_type} 'test', focus: true do",
                            'end'])
@@ -18,6 +22,21 @@ describe RuboCop::Cop::RSpec::Focus do
                            'end'])
 
       expect(subject.messages).to be_empty
+    end
+  end
+
+  [
+    :fdescribe, :fcontext,
+    :focus, :fexample, :fit, :fspecify,
+    :ffeature, :fscenario
+  ].each do |block_type|
+    it "finds `#{block_type}` blocks" do
+      inspect_source(cop, ["#{block_type} 'test' do",
+                           'end'])
+      expect(cop.offenses.size).to eq(1)
+      expect(cop.offenses.map(&:line).sort).to eq([1])
+      expect(cop.messages).to eq(['Focused spec found.'])
+      expect(cop.highlights).to eq(["#{block_type} 'test'"])
     end
   end
 end

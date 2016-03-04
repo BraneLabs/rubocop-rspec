@@ -11,26 +11,44 @@ module RuboCop
       #   describe MyClass, focus: true do
       #   end
       #
+      #   fdescribe MyClass do
+      #   end
+      #
       #   # good
       #   describe MyClass do
       #   end
       class Focus < Cop
         MESSAGE = 'Focused spec found.'.freeze
+
         FOCUSABLE_BLOCKS = [
-          :describe, :context, :it, :feature, :scenario
+          :example_group, :describe, :context, :xdescribe, :xcontext,
+          :it, :example, :specify, :xit, :xexample, :xspecify,
+          :feature, :scenario, :xfeature, :xscenario
         ].freeze
+
+        FOCUSED_BLOCKS = [
+          :fdescribe, :fcontext,
+          :focus, :fexample, :fit, :fspecify,
+          :ffeature, :fscenario
+        ].freeze
+
         FOCUS_TRUE_PAIR = s(:pair, s(:sym, :focus), s(:true))
 
         def on_send(node)
           _receiver, method_name, *_args = *node
           @focusable_block = FOCUSABLE_BLOCKS.include?(method_name)
+          if FOCUSED_BLOCKS.include?(method_name)
+            add_offense(node, :expression, MESSAGE)
+          end
         end
 
         def on_hash(node)
           return unless @focusable_block
 
           return if node.children.any? do |n|
-            add_offense(n, :expression, MESSAGE) if [FOCUS_TRUE_PAIR].include?(n)
+            if [FOCUS_TRUE_PAIR].include?(n)
+              add_offense(n, :expression, MESSAGE)
+            end
           end
         end
       end
